@@ -64,6 +64,8 @@ if r.status_code != 200:
     print("Content: %s" % r.content)
     sys.exit(8)
 
+print("Request Ok!")
+
 resp_obj = json.loads(r.content)
 
 s.close()
@@ -72,6 +74,7 @@ write_header = True
 if os.path.exists(output_csv_file):
     write_header = False
 
+print("Writing csv...")
 csv_f = open(output_csv_file, "a")
 csv_w = csv.DictWriter(csv_f, fieldnames=csv_fields, quoting=csv.QUOTE_ALL)
 if write_header:
@@ -86,3 +89,4 @@ for client_sentiment in resp_obj["clientSentiments"]:
 
 s.close()
 csv_f.close()
+print("Done! See: %s" % output_csv_file)
