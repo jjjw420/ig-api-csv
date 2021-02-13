@@ -1,5 +1,5 @@
 """
-    Market sentiment to csv.
+    Market sentiment to excell.
 
     Hannes Wagener - 2021
 """
