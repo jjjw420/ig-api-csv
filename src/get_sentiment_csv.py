@@ -9,17 +9,25 @@ import csv
 import sys
 import datetime
 import os.path
+from collections import OrderedDict 
 
+# modify the following with your IG Credentials
 IG_IDENTIFIER = "your IG user name"
 IG_PASSWORD = "your IG password"
 IG_API_KEY = "your IG API Key"
 
-IG_API_BASE_URL = "https://api.ig.com/gateway/deal/"
+# the following list determines the order in the spreadsheet.  
+# NOTE!! If this order changes - you must start a new sheet, however it is safe to append new markets at the end.
 IG_SENTIMENT_MARKETS = "EURGBP,EURUSD,EURAUD,EURCAD,EURCHF,EURNZD,EURJPY,GBPUSD,GBPAUD,GBPNZD,GBPCAD,GBPJPY,GBPCHF,AUDUSD,AUDNZD,AUDCAD,AUDCHF,AUDJPY,NZDCAD,NZDCHF,NZDJPY,NZDUSD,CADCHF,CADJPY,CHFJPY,USDJPY,USDCHF,USDCAD,USDSGD"
 
-csv_fields = ["date", "marketId", "longPositionPercentage", "shortPositionPercentage"]
+IG_API_BASE_URL = "https://api.ig.com/gateway/deal/"
 date_format = "%Y-%m-%d %H:%M:%S"
 output_csv_file = "client_sentiment.csv"
+
+csv_fields = ["Date"]
+for k in IG_SENTIMENT_MARKETS.split(","):
+    if k.strip() != "":
+        csv_fields.append(k)    
 
 headers = {
     "Content-Type": "application/json", 
@@ -36,7 +44,7 @@ auth_body = {
 
 s = requests.session()
 
-#auth
+# IG auth
 print("Authenticating...")
 s.headers.update(headers)
 r = s.post(url=IG_API_BASE_URL + "session", json=auth_body)
@@ -55,7 +63,7 @@ s.headers.update({
 })
 
 print("Getting Market Sentiment for %s" % (IG_SENTIMENT_MARKETS))
-
+# IG Sentiment API 
 r = s.get(url=IG_API_BASE_URL + "clientsentiment", params={"marketIds": IG_SENTIMENT_MARKETS})
 
 if r.status_code != 200:
@@ -68,25 +76,30 @@ print("Request Ok!")
 
 resp_obj = json.loads(r.content)
 
-s.close()
-
 write_header = True
 if os.path.exists(output_csv_file):
     write_header = False
 
 print("Writing csv...")
 csv_f = open(output_csv_file, "a")
-csv_w = csv.DictWriter(csv_f, fieldnames=csv_fields, quoting=csv.QUOTE_ALL)
+csv_w = csv.DictWriter(csv_f, fieldnames=csv_fields, quoting=csv.QUOTE_NONNUMERIC)
 if write_header:
     csv_w.writeheader()
 
 dte = datetime.datetime.now()
 dte_str = dte.strftime(date_format)
 
-for client_sentiment in resp_obj["clientSentiments"]:
-    client_sentiment["date"] = dte_str
-    csv_w.writerow(client_sentiment)
+if len(resp_obj) > 0:
+    csv_row = {}
+    csv_row["Date"] = dte_str
+    for client_sentiment in resp_obj["clientSentiments"]:
+        csv_row[client_sentiment["marketId"]] = client_sentiment["longPositionPercentage"]
+        
+    csv_w.writerow(csv_row)
 
+#close session
 s.close()
+#close csv
 csv_f.close()
+
 print("Done! See: %s" % output_csv_file)
