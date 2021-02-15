@@ -84,19 +84,21 @@ resp_obj = json.loads(r.content)
 
 wb = None
 ws = None
-# check if exists.  load if it doesm create and write headers if not.
+# check if exists.  load if it does create and write headers if not.
 if os.path.exists(output_xlsx_file):
     wb = load_workbook(output_xlsx_file)
     ws = wb[client_sentiment_sheet]
 else:
     wb = Workbook()
     ws = wb.create_sheet(client_sentiment_sheet, 0) 
-    c = 2
-    ws['A1'] = "Date" 
-    for m in IG_SENTIMENT_MARKETS.split(","):
-        if m.strip() != "":
-            ws.cell(row=1, column=c, value=m.strip())
-            c = c + 1
+
+#overwrite the header in case it changed.
+c = 2
+ws['A1'] = "Date" 
+for m in IG_SENTIMENT_MARKETS.split(","):
+    if m.strip() != "":
+        ws.cell(row=1, column=c, value=m.strip())
+        c = c + 1
 
 #get current rundate as string
 dte = datetime.datetime.now()
